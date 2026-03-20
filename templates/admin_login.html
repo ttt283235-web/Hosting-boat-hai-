@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-center min-h-screen relative overflow-hidden">
+    
+    <!-- Background Effects -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="glass p-8 md:p-12 rounded-3xl w-full max-w-md text-center relative z-10 border-t border-white/10 shadow-2xl">
+        
+        <div class="mb-8">
+            <div class="text-4xl font-cyber font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-red-400 mb-2">ZENI<span class="text-white">ADMIN</span></div>
+            <p class="text-gray-500 text-sm">System Access Required</p>
+        </div>
+
+        {% if error %}
+        <div class="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-xl text-sm mb-6 flex items-center gap-2 justify-center">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="{{ url_for('admin_login') }}" method="POST" class="space-y-4">
+            <input type="text" name="user" placeholder="Admin Username" required class="w-full p-3 rounded-lg bg-black/50 border border-gray-700 text-white focus:border-red-500 outline-none">
+            <input type="password" name="pass" placeholder="Admin Password" required class="w-full p-3 rounded-lg bg-black/50 border border-gray-700 text-white focus:border-red-500 outline-none">
+            
+            <button type="submit" class="w-full py-3 rounded-lg bg-red-600 text-white font-bold hover:bg-red-500 transition">
+                AUTHENTICATE
+            </button>
+        </form>
+
+        <div class="mt-8 text-xs text-gray-600">
+            <a href="{{ url_for('login') }}" class="text-gray-400 hover:text-white">&larr; Back to User Login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

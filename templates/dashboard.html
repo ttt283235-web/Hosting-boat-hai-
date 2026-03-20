@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Navbar -->
+<nav class="glass sticky top-0 z-40 border-b border-white/5 h-16 flex items-center">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="text-2xl font-cyber font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-600">
+            ZENI<span class="text-white">HOST</span>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="openModal('pricing')" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20 transition text-sm font-bold">
+                <i class="fas fa-crown"></i> UPGRADE
+            </button>
+            <div class="text-right hidden md:block">
+                <div class="text-[10px] text-gray-400">PLAN</div>
+                <div class="text-xs font-bold text-cyan-400">{{ user['plan_type'] }}</div>
+            </div>
+            <img src="{{ user['photo_url'] or 'https://placehold.co/32x32/1f2937/a1a1aa?text=U' }}" 
+                 onerror="this.onerror=null;this.src='https://placehold.co/32x32/1f2937/a1a1aa?text=U';"
+                 class="w-9 h-9 rounded-full border-2 border-cyan-500 object-cover">
+            <a href="/logout" class="text-red-500 hover:text-red-400 ml-2"><i class="fas fa-sign-out-alt text-xl"></i></a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mx-auto px-4 py-6 pb-24">
+
+    <!-- Quick Actions -->
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <button onclick="openModal('pricing')" class="flex-shrink-0 glass px-4 py-2 rounded-lg text-yellow-400 text-sm hover:border-yellow-400 transition">
+            <i class="fas fa-tags mr-2"></i> View Pricing
+        </button>
+        <a href="https://t.me/ZeniByBot" target="_blank" class="flex-shrink-0 glass px-4 py-2 rounded-lg text-blue-400 text-sm hover:border-blue-400 transition">
+            <i class="fab fa-telegram mr-2"></i> Admin Contact
+        </a>
+        <button onclick="alert('1. Upload a single .py file OR a .zip containing the bot code and requirements.txt.\n2. The system automatically installs common dependencies.\n3. Click Start to run.')" class="flex-shrink-0 glass px-4 py-2 rounded-lg text-green-400 text-sm hover:border-green-400 transition">
+            <i class="fas fa-book mr-2"></i> How to Use
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+        <div class="glass p-4 rounded-xl border-l-2 border-cyan-500 relative overflow-hidden">
+            <div class="absolute -right-4 -top-4 text-6xl text-cyan-500/10"><i class="fas fa-robot"></i></div>
+            <div class="text-gray-400 text-xs uppercase">Running Bots</div>
+            <div class="text-2xl font-cyber text-white">{{ bots|length }} <span class="text-sm text-gray-500 font-sans">/ {{ user['bot_limit'] }}</span></div>
+        </div>
+        <div class="glass p-4 rounded-xl border-l-2 border-green-500">
+             <div class="text-gray-400 text-xs uppercase">Server Status</div>
+            <div class="text-xl font-bold text-green-400 flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> ONLINE
+            </div>
+        </div>
+        <div class="glass p-4 rounded-xl border-l-2 border-yellow-500 hidden md:block">
+             <div class="text-gray-400 text-xs uppercase">UPI for Upgrade</div>
+            <div class="text-sm font-bold text-yellow-400">{{ upi_id }}</div>
+            <div class="text-xs text-gray-500">Contact admin after payment.</div>
+        </div>
+    </div>
+
+    <!-- Deploy -->
+    <div class="glass p-6 rounded-2xl mb-10 border border-cyan-500/20 relative group">
+        <div class="absolute inset-0 bg-cyan-500/5 group-hover:bg-cyan-500/10 transition rounded-2xl"></div>
+        <h2 class="text-lg font-bold text-white mb-4 relative z-10"><i class="fas fa-cloud-upload-alt text-cyan-400 mr-2"></i> Deploy New Bot</h2>
+        
+        {% if bots|length >= user['bot_limit'] %}
+            <div class="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-xl text-sm mb-4 flex items-center gap-2 justify-center">
+                <i class="fas fa-exclamation-triangle"></i> Limit Reached! Upgrade your plan.
+            </div>
+        {% endif %}
+
+        <form action="/upload_bot" method="POST" enctype="multipart/form-data" class="relative z-10 flex flex-col md:flex-row gap-3 items-end">
+            <div class="w-full">
+                <label class="text-xs text-gray-500 uppercase font-bold ml-1">Bot Name</label>
+                <input type="text" name="bot_name" placeholder="My Super Bot" required class="w-full mt-1 bg-black/50 border border-gray-700 rounded-lg p-3 text-white focus:border-cyan-500 outline-none">
+            </div>
+            <div class="w-full">
+                <label class="text-xs text-gray-500 uppercase font-bold ml-1">Bot File (.zip or .py)</label>
+                <input type="file" name="bot_file" accept=".zip,.py" required class="w-full mt-1 bg-black/50 border border-gray-700 rounded-lg p-2 text-gray-400 file:mr-3 file:bg-gray-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1">
+            </div>
+            <button type="submit" class="w-full md:w-auto bg-cyan-600 hover:bg-cyan-500 text-black font-bold py-3 px-6 rounded-lg transition" {% if bots|length >= user['bot_limit'] %}disabled{% endif %}>
+                DEPLOY
+            </button>
+        </form>
+    </div>
+
+    <!-- Bots List -->
+    <h3 class="text-lg font-bold text-white mb-4 px-2">Active Instances</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {% for bot in bots %}
+        <div class="glass p-5 rounded-xl border-l-4 {{ 'border-green-500' if bot['status'] == 'running' else 'border-red-500' }}">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h4 class="font-bold text-lg">{{ bot['bot_name'] }}</h4>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-gray-400">ID: {{ bot['id'] }}</span>
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded {{ 'bg-green-500/20 text-green-400' if bot['status'] == 'running' else 'bg-red-500/20 text-red-400' }}">
+                            {{ bot['status'] }}
+                        </span>
+                    </div>
+                </div>
+                <!-- Controls -->
+                <div class="flex gap-1">
+                    {% if bot['status'] == 'running' %}
+                    <a href="/action/stop/{{ bot['id'] }}" title="Stop" class="p-2 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition"><i class="fas fa-stop"></i></a>
+                    <a href="/action/start/{{ bot['id'] }}" title="Restart" class="p-2 bg-blue-500/20 text-blue-500 hover:bg-blue-500 hover:text-white rounded transition"><i class="fas fa-sync"></i></a>
+                    {% else %}
+                    <a href="/action/start/{{ bot['id'] }}" title="Start" class="p-2 bg-green-500/20 text-green-500 hover:bg-green-500 hover:text-white rounded transition"><i class="fas fa-play"></i></a>
+                    {% endif %}
+                    <a href="/action/delete/{{ bot['id'] }}" onclick="return confirm('Delete {{ bot.bot_name }}?')" title="Delete" class="p-2 bg-gray-700 text-gray-400 hover:bg-white hover:text-black rounded transition"><i class="fas fa-trash"></i></a>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="openModal('console', {{ bot['id'] }})" class="bg-black/40 border border-gray-700 hover:border-cyan-500 text-gray-300 py-2 rounded text-xs flex items-center justify-center gap-2">
+                    <i class="fas fa-terminal text-cyan-500"></i> Console
+                </button>
+                <button onclick="openModal('files', {{ bot['id'] }})" class="bg-black/40 border border-gray-700 hover:border-yellow-500 text-gray-300 py-2 rounded text-xs flex items-center justify-center gap-2">
+                    <i class="fas fa-folder-open text-yellow-500"></i> Files
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full text-center py-10 text-gray-500 glass rounded-xl">
+            <i class="fas fa-ghost text-4xl mb-2"></i><br>No bots found. Deploy your first bot now!
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- UNIVERSAL MODAL (Pricing / Console / Files) -->
+<div id="modalBackdrop" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div class="glass w-full max-w-4xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-cyan-500/30">
+        
+        <!-- Modal Header -->
+        <div class="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
+            <h3 id="modalTitle" class="font-cyber text-lg text-white tracking-wider">TITLE</h3>
+            <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-800 hover:bg-red-500 text-white flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Modal Content -->
+        <div id="modalContent" class="flex-1 overflow-auto bg-[#0a0a0f] relative">
+            <!-- Dynamic Content Goes Here -->
+        </div>
+    </div>
+</div>
+
+<script>
+let logsInterval;
+let currentBotId = null;
+let currentFileName = '';
+
+// Price variables are passed from Flask
+const vipPrice = "{{ vip_price }}";
+const premiumPrice = "{{ premium_price }}";
+const upiId = "{{ upi_id }}";
+
+function openModal(type, id=null) {
+    const modal = document.getElementById('modalBackdrop');
+    const title = document.getElementById('modalTitle');
+    const content = document.getElementById('modalContent');
+    currentBotId = id;
+    
+    if(logsInterval) clearInterval(logsInterval);
+    
+    modal.classList.remove('hidden');
+    
+    if (type === 'pricing') {
+        title.innerHTML = '<i class="fas fa-crown text-yellow-400"></i> UPGRADE PLAN';
+        content.innerHTML = `
+            <div class="p-6 grid md:grid-cols-3 gap-6">
+                <!-- Free -->
+                <div class="glass p-6 rounded-xl text-center border-t-4 border-gray-500">
+                    <div class="text-gray-400 font-bold text-sm">STARTER</div>
+                    <div class="text-3xl font-bold text-white my-4">Free</div>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-6"><li><i class="fas fa-check text-gray-500"></i> 1 Bot Limit</li><li><i class="fas fa-check text-gray-500"></i> Basic Support</li></ul>
+                    <button class="w-full py-2 bg-gray-800 rounded cursor-not-allowed">Active</button>
+                </div>
+                <!-- Premium -->
+                <div class="glass p-6 rounded-xl text-center border-t-4 border-cyan-500 shadow-xl shadow-cyan-500/20 bg-cyan-900/10">
+                    <div class="text-cyan-400 font-bold text-sm">PRO</div>
+                    <div class="text-3xl font-bold text-white my-4">₹${premiumPrice}</div>
+                    <ul class="text-sm text-gray-300 space-y-2 mb-6">
+                        <li><i class="fas fa-check text-cyan-500"></i> 10 Bots</li>
+                        <li><i class="fas fa-check text-cyan-500"></i> 24/7 Running</li>
+                        <li><i class="fas fa-check text-cyan-500"></i> Priority Support</li>
+                    </ul>
+                    <a href="https://t.me/ZeniByBot" target="_blank" class="block w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded transition">BUY NOW (UPI: ${upiId})</a>
+                </div>
+                <!-- VIP -->
+                <div class="glass p-6 rounded-xl text-center border-t-4 border-purple-500">
+                    <div class="text-purple-400 font-bold text-sm">VIP</div>
+                    <div class="text-3xl font-bold text-white my-4">₹${vipPrice}</div>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-6">
+                        <li><i class="fas fa-check text-purple-500"></i> Unlimited Bots</li>
+                        <li><i class="fas fa-check text-purple-500"></i> VIP Support (Direct)</li>
+                        <li><i class="fas fa-check text-purple-500"></i> High Priority Server</li>
+                    </ul>
+                    <a href="https://t.me/ZeniByBot" target="_blank" class="block w-full py-2 border border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white rounded transition">CONTACT ADMIN</a>
+                </div>
+            </div>
+        `;
+    }
+    else if (type === 'console') {
+        title.innerHTML = '<i class="fas fa-terminal text-cyan-400"></i> LIVE CONSOLE (Bot ID: ' + id + ')';
+        content.innerHTML = '<pre id="logsArea" class="p-4 font-mono text-xs text-green-400 whitespace-pre-wrap h-full overflow-auto">Connecting...</pre>';
+        fetchLogs(id);
+        logsInterval = setInterval(() => fetchLogs(id), 2000); // 2 second refresh
+    }
+    else if (type === 'files') {
+        title.innerHTML = '<i class="fas fa-folder-open text-yellow-400"></i> FILE MANAGER (Bot ID: ' + id + ')';
+        content.innerHTML = `
+            <div class="flex h-full min-h-[400px]">
+                <div class="w-1/3 border-r border-gray-700 bg-[#0d0d12] overflow-auto p-2" id="fileList">Loading...</div>
+                <div class="w-2/3 flex flex-col bg-[#15151a]">
+                    <textarea id="fileEditor" class="flex-1 bg-transparent p-4 text-gray-300 font-mono text-sm outline-none resize-none" placeholder="Select file to edit..."></textarea>
+                    <div class="p-2 border-t border-gray-700 text-right">
+                        <span id="fileNameDisplay" class="text-gray-500 text-xs mr-3">No file selected</span>
+                        <button onclick="saveFile(${id})" class="px-4 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-500 transition">SAVE FILE</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        loadFiles(id);
+    }
+}
+
+function closeModal() {
+    document.getElementById('modalBackdrop').classList.add('hidden');
+    if(logsInterval) clearInterval(logsInterval);
+    currentBotId = null;
+    currentFileName = '';
+}
+
+function fetchLogs(id) {
+    fetch(`/get_logs/${id}`).then(r => r.text()).then(d => {
+        const el = document.getElementById('logsArea');
+        if(el) { el.textContent = d; el.scrollTop = el.scrollHeight; }
+    });
+}
+
+function loadFiles(id) {
+    fetch(`/files/${id}`).then(r=>r.json()).then(d=>{
+        const l = document.getElementById('fileList'); l.innerHTML='';
+        if (!d.files || d.files.length === 0) {
+             l.innerHTML = '<div class="p-2 text-gray-500">No files found.</div>';
+             return;
+        }
+        d.files.forEach(f=>{
+            l.innerHTML += `<div onclick="readFile(${id}, '${f}')" class="p-2 border-b border-gray-800 cursor-pointer hover:bg-gray-800 text-gray-400 text-xs flex items-center gap-2"><i class="far fa-file"></i> ${f}</div>`
+        });
+    }).catch(e => {
+        document.getElementById('fileList').innerHTML = `<div class="p-2 text-red-400">Error loading files.</div>`;
+    });
+}
+
+function readFile(id, n) {
+    currentFileName = n;
+    document.getElementById('fileNameDisplay').textContent = n;
+    document.getElementById('fileEditor').value = 'Loading...';
+    
+    fetch(`/read_file/${id}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename:n})})
+    .then(r=>r.json()).then(d=>{ 
+        document.getElementById('fileEditor').value = d.content; 
+    }).catch(e => {
+        document.getElementById('fileEditor').value = 'Could not read file (Binary or network error).';
+    });
+}
+
+function saveFile(id) {
+    if (!currentFileName) {
+        alert('Please select a file first.');
+        return;
+    }
+    const content = document.getElementById('fileEditor').value;
+    
+    fetch(`/save_file/${id}`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({filename:currentFileName, content:content})})
+    .then(r=>r.json()).then(d=>{
+        alert('File Saved Successfully!');
+    }).catch(e => {
+        alert('Save Failed! Check server logs.');
+    });
+}
+</script>
+{% endblock %}
+

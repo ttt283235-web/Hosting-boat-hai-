@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen p-4 md:p-6 font-sans">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-4xl font-cyber text-red-500 mb-6 tracking-tighter">ZENI <span class="text-white">ADMIN MODE</span></h1>
+
+        <!-- STATS CARDS -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div class="glass p-4 rounded-xl border-l-4 border-blue-500">
+                <div class="text-gray-400 text-xs">TOTAL USERS</div>
+                <div class="text-2xl font-bold">{{ all_users | length }}</div>
+            </div>
+            <div class="glass p-4 rounded-xl border-l-4 border-green-500">
+                <div class="text-gray-400 text-xs">TOTAL BOTS</div>
+                <div class="text-2xl font-bold">{{ bots | length }}</div>
+            </div>
+            <div class="glass p-4 rounded-xl border-l-4 border-yellow-500 col-span-2 md:col-span-2">
+                <div class="text-gray-400 text-xs">ADMIN INFO</div>
+                <div class="text-sm font-bold">Logged in as: {{ session['user_email'] | default(admin_user) }}</div>
+            </div>
+        </div>
+
+        <!-- PRICE SETTING FORM -->
+        <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-yellow-400">💰 PRICE & PAYMENT SETTING</h2>
+        <div class="glass p-6 rounded-xl shadow-2xl mb-12">
+            <form action="{{ url_for('update_settings') }}" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">VIP Price (₹)</label>
+                    <input type="number" name="vip_price" value="{{ settings.vip_price | default(250) }}" required class="w-full p-2 rounded bg-black/50 text-white border border-gray-700 focus:border-yellow-400 outline-none" min="0">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Premium Price (₹)</label>
+                    <input type="number" name="premium_price" value="{{ settings.premium_price | default(100) }}" required class="w-full p-2 rounded bg-black/50 text-white border border-gray-700 focus:border-yellow-400 outline-none" min="0">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">UPI ID (Payment)</label>
+                    <input type="text" name="upi_id" value="{{ settings.upi_id | default('lordleadernikki-1@oksbi') }}" required class="w-full p-2 rounded bg-black/50 text-white border border-gray-700 focus:border-yellow-400 outline-none">
+                </div>
+                
+                <div>
+                    <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 rounded transition-all">
+                        SAVE SETTINGS
+                    </button>
+                </div>
+            </form>
+        </div>
+
+
+        <!-- USER MANAGEMENT TABLE -->
+        <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-blue-400">👥 USER DATABASE ({{ all_users|length }})</h2>
+        <div class="overflow-x-auto rounded-xl border border-gray-800 shadow-2xl mb-12 mobile-table-wrapper">
+            <table class="w-full text-left bg-black/50">
+                <thead class="bg-gray-800 text-gray-400 text-xs uppercase sticky top-0 z-10">
+                    <tr>
+                        <th class="p-4 w-[250px]">User Info</th>
+                        <th class="p-4 w-[100px]">Plan</th>
+                        <th class="p-4 w-[100px]">Status</th>
+                        <th class="p-4 w-[350px] text-center">Manage Plan & Action</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for user in all_users %}
+                    <tr class="border-b border-gray-800 hover:bg-gray-900/50 transition">
+                        <td class="p-4" data-label="UID:">
+                            <div class="flex items-center gap-3">
+                                <img src="{{ user['photo_url'] or 'https://placehold.co/32x32/1f2937/a1a1aa?text=U' }}" 
+                                     onerror="this.onerror=null;this.src='https://placehold.co/32x32/1f2937/a1a1aa?text=U';"
+                                     class="w-8 h-8 rounded-full object-cover border border-cyan-500/50">
+                                <div>
+                                    <div class="font-bold text-white">{{ user['email'] }}</div>
+                                    <div class="text-gray-500 text-xs font-mono">{{ user['firebase_uid'][:10] }}...</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4" data-label="Plan:">
+                            <span class="px-2 py-0.5 rounded text-xs font-semibold" 
+                                  style="background-color: 
+                                      {% if user.plan_type == 'VIP' %}#f59e0b; 
+                                      {% elif user.plan_type == 'Premium' %}#10b981; 
+                                      {% else %}#6b7280;{% endif %}">
+                                {{ user.plan_type }} ({{ user['bot_limit'] }} Bots)
+                            </span>
+                        </td>
+                        <td class="p-4" data-label="Status:">
+                            {% if user.is_banned %}
+                            <span class="text-red-500 font-bold">BANNED</span>
+                            {% else %}
+                            <span class="text-green-500">ACTIVE</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- Plan & Limit Form -->
+                        <td class="p-4" data-label="Controls:">
+                            <div class="flex flex-col gap-2">
+                                <!-- Ban/Unban Button -->
+                                <form action="{{ url_for('admin_update_user') }}" method="POST" class="w-full">
+                                    <input type="hidden" name="uid" value="{{ user.firebase_uid }}">
+                                    <input type="hidden" name="action" value="{% if user.is_banned %}unban{% else %}ban{% endif %}">
+                                    <button type="submit" class="w-full text-xs font-bold py-1.5 px-2 rounded 
+                                        {% if user.is_banned %}bg-green-600 hover:bg-green-700{% else %}bg-red-600 hover:bg-red-700{% endif %}">
+                                        {% if user.is_banned %}UNBAN{% else %}BAN USER{% endif %}
+                                    </button>
+                                </form>
+
+                                <!-- Plan Change Form -->
+                                <form action="{{ url_for('admin_update_user') }}" method="POST" class="flex items-center gap-1 text-xs bg-gray-700/50 p-1 rounded">
+                                    <input type="hidden" name="uid" value="{{ user.firebase_uid }}">
+                                    <input type="hidden" name="action" value="set_plan">
+                                    
+                                    <select name="plan" class="text-black p-1 rounded text-xs flex-1 bg-gray-300">
+                                        <option value="Free" {% if user.plan_type == 'Free' %}selected{% endif %}>Free</option>
+                                        <option value="Premium" {% if user.plan_type == 'Premium' %}selected{% endif %}>Premium</option>
+                                        <option value="VIP" {% if user.plan_type == 'VIP' %}selected{% endif %}>VIP</option>
+                                    </select>
+                                    
+                                    <input type="number" name="limit" value="{{ user.bot_limit }}" placeholder="Limit" class="w-12 text-black p-1 rounded text-xs text-center bg-gray-300">
+                                    
+                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">
+                                        SET
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- GLOBAL BOTS TABLE -->
+        <h2 class="text-2xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-400">🤖 GLOBAL BOTS ({{ bots | length }})</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for bot in bots %}
+            <div class="glass p-4 rounded-xl border border-gray-700 flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-white">{{ bot['bot_name'] }}</div>
+                    <div class="text-xs text-gray-500">Owner: {{ bot['firebase_uid'][:10] }}...</div>
+                    <div class="text-xs {% if bot.status == 'running' %}text-green-400{% else %}text-red-400{% endif %} font-semibold uppercase">{{ bot.status }}</div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('bot_action', action='stop', bot_id=bot.id) }}" class="px-3 py-1 bg-red-600/50 text-red-400 rounded text-xs hover:bg-red-600 hover:text-white transition">STOP</a>
+                    <a href="{{ url_for('bot_action', action='start', bot_id=bot.id) }}" class="px-3 py-1 bg-green-600/50 text-green-400 rounded text-xs hover:bg-green-600 hover:text-white transition">START</a>
+                    <a href="{{ url_for('bot_action', action='delete', bot_id=bot.id) }}" class="px-3 py-1 bg-gray-700 text-gray-400 rounded text-xs hover:bg-white hover:text-black transition">DEL</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
